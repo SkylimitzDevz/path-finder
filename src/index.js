@@ -47,9 +47,43 @@ function getNeighbourNodes(currentX, currentY){
 
     return [node1, node2, node3, node4]
 }
+// check if a node is already checked / closed
+function isNodeClosed(x, y, closedList) {
+    const result = closedList.find((node) => node.x === x && node.y === y)
+    if(result){
+        return true
+    } else {
+        return false
+    }
+}
 
+function openNewNode(node, endNode, nextBlock) {
+    let currentNode = {
+        x: node.x,
+        y: node.y,
+        h: getHeuristicVal(node.x, node.y, endNode.x, endNode.y),
+        g: nextBlock.g + 1,
+        f: nextBlock.g + 1 + getHeuristicVal(node.x, node.y, endNode.x, endNode.y),
+    }
 
-function findPath(startX, startY, endX, endY, grid) {
+    return currentNode
+}
+
+function closeNode(node, openList, closedList) {
+    const index = openList.findIndex((currentNode) => currentNode.x === node.x && currentNode.y === node.y)
+
+    const transferrNode = openList[index]
+
+    if(index >= 0){
+        openList.splice(index, 1)
+    } else {
+        console.log("No index found!")
+    }
+
+    closedList.push(transferrNode)
+}
+
+export function findPath(startX, startY, endX, endY, grid) {
     const startBlock = {
         x: 0,
         y: 0,
@@ -65,8 +99,15 @@ function findPath(startX, startY, endX, endY, grid) {
 
     while(true) {
 
+        let nextBlock = null
+
         // get the node with the lowest f value from the open list
-        const nextBlock = openList.reduce((min, obj) => obj.f < min.f ? obj : min)
+        if(openList){
+            nextBlock = openList.reduce((min, obj) => obj.f < min.f ? obj : min)
+        } else {
+            console.log("OpenList is empty, cannot proceed!")
+            break
+        }
 
         // check if the found block is our final destination
         if(nextBlock.x === endBlock.x && nextBlock.y === endBlock.y){
@@ -82,17 +123,23 @@ function findPath(startX, startY, endX, endY, grid) {
         // go thorugh all nodes to see which are valid
         for (let i = 0; i < neighbourNodes.length; i++) {
 
+            // current search node
             const currentSearchNode = neighbourNodes[i]
+            console.log("current search node > " + JSON.stringify(currentSearchNode, null, 2))
+
+            // final result
             let neighbourMatch = null
 
             // find matches to the potential neighbour nodes from the grid
             for (let i = 0; i < grid.length; i++) {
                 const currentRow = grid[i]
+                // console.log("current row > " + JSON.stringify(currentRow, null, 2))
 
-                const currentNeighbour = currentRow.find((node) => node.x === currentSearchNode.x && node.y === currentSearchNode.y )
+                const currentNeighbour = currentRow.find((node) => node.x === currentSearchNode[0] && node.y === currentSearchNode[1] )
 
                 if(currentNeighbour){
                     neighbourMatch = currentNeighbour
+                    console.log("Neigbour node found! > " + neighbourMatch)
                     break
                 }
             }
@@ -101,13 +148,18 @@ function findPath(startX, startY, endX, endY, grid) {
                 console.log("No neighbour node found!")
             } else {
 
-                if(!neighbourMatch.isWall){
-                    console.log("potential next node found!")
+                if(!neighbourMatch.isWall && !isNodeClosed(neighbourMatch.x, neighbourMatch.y, closedList)){
+                    const newNode = openNewNode(neighbourMatch, endBlock, nextBlock)
+
+                    openList.push(newNode)
+
                 }
 
             }
-        }
 
+        }
+        
+        closeNode(nextBlock, openList, closedList)
 
     }
 }
