@@ -135,7 +135,7 @@ export function findPath(startX, startY, endX, endY, grid) {
                 const currentRow = grid[i]
                 // console.log("current row > " + JSON.stringify(currentRow, null, 2))
 
-                const currentNeighbour = currentRow.find((node) => node.x === currentSearchNode[0] && node.y === currentSearchNode[1] )
+                const currentNeighbour = currentRow.find((node) => node.x === currentSearchNode && node.y === currentSearchNode[1] )
 
                 if(currentNeighbour){
                     neighbourMatch = currentNeighbour
