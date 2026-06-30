@@ -1,16 +1,65 @@
-# React + Vite
+# Path Finder
 
-This template provides a minimal setup to get React working in Vite with HMR and some Oxlint rules.
+A from-scratch JavaScript implementation of the A* pathfinding algorithm, built on a 2D grid.
 
-Currently, two official plugins are available:
+## What it does
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Oxc](https://oxc.rs)
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/)
+Given a grid, a start cell, and an end cell, `findPath` searches for the shortest path between them using the A* algorithm — picking the most promising cell to explore next based on a combination of distance already travelled (`g`) and estimated distance remaining (`h`).
 
-## React Compiler
+Movement is restricted to 4 directions (up, down, left, right) — no diagonals.
 
-The React Compiler is not enabled on this template because of its impact on dev & build performances. To add it, see [this documentation](https://react.dev/learn/react-compiler/installation).
+## Usage
 
-## Expanding the Oxlint configuration
+```javascript
+import { createGrid, findPath } from "./index.js";
 
-If you are developing a production application, we recommend using TypeScript with type-aware lint rules enabled. Check out the [TS template](https://github.com/vitejs/vite/tree/main/packages/create-vite/template-react-ts) for information on how to integrate TypeScript and Oxlint's TypeScript related rules in your project.
+// Create a 10x10 grid
+const grid = createGrid(10, 10);
+
+// Find a path from (0,0) to (9,9)
+const result = findPath(0, 0, 9, 9, grid);
+```
+
+### Grid structure
+
+`createGrid(rows, cols)` returns a 2D array of cell objects:
+
+```javascript
+{
+  parent: null,    // used for path tracing
+  x: 0,
+  y: 0,
+  isWall: false,   // set to true to block movement through this cell
+  type: "none"
+}
+```
+
+To add walls, set `isWall: true` on the relevant cell(s) before calling `findPath`.
+
+## How it works
+
+Each cell tracks three scores:
+
+- **g** — actual cost (steps) from the start to this cell
+- **h** — estimated cost (Manhattan distance) from this cell to the end
+- **f** — `g + h`, the total estimated cost of a path through this cell
+
+The algorithm repeatedly picks the cell with the lowest `f` from the open list, checks if it's the goal, and otherwise expands its neighbours — scoring and queuing any that are valid (not a wall, not already explored).
+
+## Functions
+
+| Function | Purpose |
+|---|---|
+| `createGrid(rows, cols)` | Builds the grid of cell objects |
+| `getHeuristicVal(x1, y1, x2, y2)` | Calculates Manhattan distance between two points |
+| `getNeighbourNodes(x, y)` | Returns the coordinates of the 4 cardinal neighbours |
+| `isNodeClosed(x, y, closedList)` | Checks whether a cell has already been fully explored |
+| `openNewNode(node, endNode, currentNode)` | Builds a scored node object (g, h, f) for the open list |
+| `closeNode(node, openList, closedList)` | Moves a node from the open list to the closed list |
+| `findPath(startX, startY, endX, endY, grid)` | Runs the main A* loop |
+
+## TODO
+
+- [ ] Fix infinite loop: neighbours can currently be added to the open list multiple times, since there's no check for whether a neighbour is already open (only closed). Need an `isNodeOpen` check before pushing a new node.
+- [ ] Path tracing — once the goal is reached, walk back through `parent` references to reconstruct the actual route.
+- [ ] Fix hardcoded `x: 0, y: 0` in `startBlock` inside `findPath` (should use `startX`, `startY`).
