@@ -12,11 +12,9 @@ export function createGrid(rows, cols) {
             let colNum = x
 
             const currentBlock = {
-                parent: null,
                 x: rowNum,
                 y: colNum,
                 isWall: false,
-                type: "none"
             }
 
             currentArray.push(currentBlock)
@@ -25,7 +23,6 @@ export function createGrid(rows, cols) {
         gridArray.push(currentArray)
 
     }
-    console.log(gridArray)
     return gridArray
 }
 
@@ -34,7 +31,7 @@ function getHeuristicVal(startX, startY, endX, endY) {
     const x =  Math.abs(endX - startX)
     const y =  Math.abs(endY - startY)
 
-    console.log(x,y)
+    console.log(`[FROM GET HEURISTIC] : Heuristic > ${x,y}`)
     return(x + y)
 }
 
@@ -57,6 +54,15 @@ function isNodeClosed(x, y, closedList) {
     }
 }
 
+function isNodeOpen(x, y, openList) {
+    const result = openList.find((node) => node.x === x && node.y === y)
+    if(result){
+        return true
+    } else {
+        return false
+    }
+}
+
 function openNewNode(node, endNode, nextBlock) {
     let currentNode = {
         x: node.x,
@@ -64,8 +70,10 @@ function openNewNode(node, endNode, nextBlock) {
         h: getHeuristicVal(node.x, node.y, endNode.x, endNode.y),
         g: nextBlock.g + 1,
         f: nextBlock.g + 1 + getHeuristicVal(node.x, node.y, endNode.x, endNode.y),
+        parent: { x: nextBlock.x, y: nextBlock.y }
     }
 
+    console.log("[FROM OPEN NODE] : Parent > " + JSON.stringify(currentNode.parent))
     return currentNode
 }
 
@@ -77,19 +85,33 @@ function closeNode(node, openList, closedList) {
     if(index >= 0){
         openList.splice(index, 1)
     } else {
-        console.log("No index found!")
+        console.log("[FROM CLOSE NODE] : No index found!")
     }
 
     closedList.push(transferrNode)
+    console.log("[FROM CLOSE NODE] : Node closed sucessfully!")
+}
+
+
+function isNodeValid(x,y, openList, closedList) {
+    const isClosed = isNodeClosed(x, y, closedList)
+    const isOpen = isNodeOpen(x, y, openList)
+
+    if (!isClosed && !isOpen){
+        return true
+    } else {
+        return false
+    }
 }
 
 export function findPath(startX, startY, endX, endY, grid) {
     const startBlock = {
-        x: 0,
-        y: 0,
+        x: startX,
+        y: startY,
         g: 0,
         h: getHeuristicVal(0,0, endX, endY),
         f: getHeuristicVal(0,0, endX, endY),
+        parent: { x: 0, y: 0 }
     }
 
     const endBlock = {x: endX, y: endY}
@@ -105,13 +127,13 @@ export function findPath(startX, startY, endX, endY, grid) {
         if(openList){
             nextBlock = openList.reduce((min, obj) => obj.f < min.f ? obj : min)
         } else {
-            console.log("OpenList is empty, cannot proceed!")
+            console.log("[ERROR] : OpenList is empty, cannot proceed!")
             break
         }
 
         // check if the found block is our final destination
         if(nextBlock.x === endBlock.x && nextBlock.y === endBlock.y){
-            console.log("End reached!")
+            console.log("[SYSTEM] : End reached > " + JSON.stringify({x: nextBlock.x, y: nextBlock.y}))
             return nextBlock
 
             break
@@ -125,7 +147,7 @@ export function findPath(startX, startY, endX, endY, grid) {
 
             // current search node
             const currentSearchNode = neighbourNodes[i]
-            console.log("current search node > " + JSON.stringify(currentSearchNode, null, 2))
+            // console.log("current search node > " + JSON.stringify(currentSearchNode))
 
             // final result
             let neighbourMatch = null
@@ -135,22 +157,22 @@ export function findPath(startX, startY, endX, endY, grid) {
                 const currentRow = grid[i]
                 // console.log("current row > " + JSON.stringify(currentRow, null, 2))
 
-                const currentNeighbour = currentRow.find((node) => node.x === currentSearchNode && node.y === currentSearchNode[1] )
+                const currentNeighbour = currentRow.find((node) => node.x === currentSearchNode[0] && node.y === currentSearchNode[1] )
 
                 if(currentNeighbour){
                     neighbourMatch = currentNeighbour
-                    console.log("Neigbour node found! > " + neighbourMatch)
+                    // console.log("Neigbour node found! > " + neighbourMatch)
                     break
                 }
             }
 
             if(!neighbourMatch) {
-                console.log("No neighbour node found!")
+                console.log("[SYSTEM] : No neighbour node found!")
             } else {
 
-                if(!neighbourMatch.isWall && !isNodeClosed(neighbourMatch.x, neighbourMatch.y, closedList)){
-                    const newNode = openNewNode(neighbourMatch, endBlock, nextBlock)
+                if(isNodeValid(neighbourMatch.x, neighbourMatch.y, openList, closedList)){
 
+                    const newNode = openNewNode(neighbourMatch, endBlock, nextBlock)
                     openList.push(newNode)
 
                 }
@@ -163,17 +185,3 @@ export function findPath(startX, startY, endX, endY, grid) {
 
     }
 }
-
-
-// getHeuristicVal(0,0,10,10)
-// createGrid(10,10)
-
-
-// first off it calcutaes the distance between the current x and y coods to the final x and y
-
-// now it checks if it should move straight or diagonally by checking if either the x or y coods of the end and the start is equal, if yes it should move vertically or horzontally, if no, it should move diagonally
-
-
-//  g(n) — the actual cost to reach this node from the start
-// h(n) — a heuristic estimate of the cost to reach the goal from here (usually straight-line distance)
-// f(n) — the total estimated cost of the path through this node
